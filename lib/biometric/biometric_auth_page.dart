@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_poc/biometric/home_page.dart';
+import 'package:flutter_poc/biometric/viewmodel.dart';
 import 'package:local_auth/local_auth.dart';
-
 class BiometricAuthPage extends StatefulWidget {
   const BiometricAuthPage({super.key});
 
@@ -9,50 +10,80 @@ class BiometricAuthPage extends StatefulWidget {
 }
 
 class _BiometricAuthPageState extends State<BiometricAuthPage> {
-  final LocalAuthentication auth = LocalAuthentication();
-  bool _isAuthenticated = false;
-  String _message = 'Tekan button untuk autentikasi';
-  
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  String _message = 'Masukkan email dan password untuk login';
+  String? _currentUser;
 
-  Future<void> _authenticate(BiometricType type) async {
-    try {
-      // Memeriksa apakah device mendukung biometrik atau PIN
-      bool isBiometricSupported = await auth.canCheckBiometrics || await auth.isDeviceSupported();
-      if (!isBiometricSupported) {
-        setState(() {
-          _message = 'Device Anda tidak mendukung biometrik';
-        });
-        return;
-      }
+  final AuthViewModel _viewModel = AuthViewModel();
 
-      // Menentukan tipe autentikasi yang diizinkan
-      bool isAuthenticated = await auth.authenticate(
-        localizedReason: 'Izinkan akses dengan ${type == BiometricType.face ? 'Face ID' : type == BiometricType.fingerprint ? 'Fingerprint' : 'PIN'}',
-        options: AuthenticationOptions(
-          sensitiveTransaction: isBiometricSupported,
-          useErrorDialogs: false,
-          stickyAuth: false,
-          biometricOnly: true, // Menyediakan PIN untuk semua tipe biometrik
-        ),
-      );
+  Future<void> _login() async {
+    final username = _usernameController.text;
+    final password = _passwordController.text;
 
-      // Mengatur status autentikasi berdasarkan hasil
+    final account = await _viewModel.login(username, password);
+
+    if (account != null) {
       setState(() {
-        _isAuthenticated = isAuthenticated;
-        _message = isAuthenticated ? 'Autentikasi berhasil!' : 'Autentikasi gagal atau dibatalkan';
+        _currentUser = username;
+        _message = 'Login berhasil!';
       });
-    } catch (e) {
+
+      if (!account['hasAllowedBiometric']) {
+        bool allowBiometric = await _viewModel.showBiometricPrompt(context, account);
+        if (allowBiometric) {
+          await _viewModel.requestBiometricAuthentication(account);
+        } 
+        // else {
+          _navigateToSecondPage(account);
+        // }
+      } else {
+        _navigateToSecondPage(account);
+      }
+    } else {
       setState(() {
-        _message = 'Terjadi kesalahan: ${e.toString()}';
+        _message = 'Username atau password salah';
       });
     }
+  }
+
+  Future<void> _authenticateWithBiometric() async {
+    final username = _usernameController.text;
+    final password = _passwordController.text;
+
+    final account = await _viewModel.getAccount(username, password);
+
+    if (account == null) {
+      setState(() {
+        _message = 'Masukkan username dan password yang valid terlebih dahulu.';
+      });
+      return;
+    }
+
+    if (account['hasAllowedBiometric']) {
+      await _viewModel.requestBiometricAuthentication(account);
+      _navigateToSecondPage(account);
+    } else {
+      setState(() {
+        _message = 'Biometrik belum diizinkan. Silakan login dengan email.';
+      });
+    }
+  }
+
+  void _navigateToSecondPage(Map<String, dynamic> account) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SecondPage(account: account),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Autentikasi Biometrik'),
+        title: const Text('Login'),
       ),
       body: Center(
         child: Column(
@@ -63,19 +94,24 @@ class _BiometricAuthPageState extends State<BiometricAuthPage> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
+            TextField(
+              controller: _usernameController,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            TextField(
+              controller: _passwordController,
+              decoration: const InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () => _authenticate(BiometricType.face),
-              child: const Text('Autentikasi Face ID'),
+              onPressed: _login,
+              child: const Text('Login dengan Email'),
             ),
             const SizedBox(height: 10),
             ElevatedButton(
-              onPressed: () => _authenticate(BiometricType.fingerprint),
-              child: const Text('Autentikasi Fingerprint'),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () => _authenticate(BiometricType.weak),
-              child: const Text('Autentikasi dengan PIN'),
+              onPressed: _authenticateWithBiometric,
+              child: const Text('Login dengan Biometrik'),
             ),
           ],
         ),
