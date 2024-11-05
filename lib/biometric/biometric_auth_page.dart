@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_poc/biometric/home_page.dart';
 import 'package:flutter_poc/biometric/viewmodel.dart';
-import 'package:local_auth/local_auth.dart';
 class BiometricAuthPage extends StatefulWidget {
   const BiometricAuthPage({super.key});
 

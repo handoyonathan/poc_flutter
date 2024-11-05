@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_poc/E2E_enrcryption/transaction.dart';
 import 'package:flutter_poc/biometric/biometric_auth_page.dart';
 
 void main() {
