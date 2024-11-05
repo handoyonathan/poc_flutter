@@ -10,8 +10,8 @@ class StoryViewModel {
 
   final List<String> storyUrls = [
     'assets/image/story1.png',
-    'assets/video/storyvideo.mp4',
     'assets/image/story2.png',
+    'assets/video/storyvideo.mp4',
   ];
 
   final Function(int) onStoryChanged;
