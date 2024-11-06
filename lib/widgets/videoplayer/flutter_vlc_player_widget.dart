@@ -1,39 +1,54 @@
-import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 
-class VlcPlayerWidget extends StatefulWidget {
-  final String videoUrl; // Tambahkan parameter videoUrl
+class VlcVideoWidget extends StatefulWidget {
+  final String videoUrl;
 
-  VlcPlayerWidget({required this.videoUrl}); // Constructor dengan videoUrl
+  const VlcVideoWidget({Key? key, required this.videoUrl}) : super(key: key);
 
   @override
-  _VlcPlayerWidgetState createState() => _VlcPlayerWidgetState();
+  _VlcVideoWidgetState createState() => _VlcVideoWidgetState();
 }
 
-class _VlcPlayerWidgetState extends State<VlcPlayerWidget> {
+class _VlcVideoWidgetState extends State<VlcVideoWidget> {
   late VlcPlayerController _vlcController;
 
   @override
   void initState() {
     super.initState();
     _vlcController = VlcPlayerController.asset(
-      widget.videoUrl, // Gunakan videoUrl dari widget
-      options: VlcPlayerOptions(),
+      widget.videoUrl,
+      autoPlay: false,
     );
   }
 
   @override
   void dispose() {
+    _vlcController.stop();
     _vlcController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return VlcPlayer(
-      controller: _vlcController,
-      aspectRatio: 16 / 9,
-      placeholder: Center(child: CircularProgressIndicator()),
+    return Column(
+      children: [
+        VlcPlayer(
+          controller: _vlcController,
+          aspectRatio: 16 / 9,
+          placeholder: const CircularProgressIndicator(),
+        ),
+        IconButton(
+          icon: Icon(
+            _vlcController.value.isPlaying ? Icons.pause : Icons.play_arrow,
+          ),
+          onPressed: () {
+            setState(() {
+              _vlcController.value.isPlaying ? _vlcController.pause() : _vlcController.play();
+            });
+          },
+        ),
+      ],
     );
   }
 }

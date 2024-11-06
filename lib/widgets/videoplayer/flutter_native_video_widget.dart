@@ -1,32 +1,54 @@
 import 'package:flutter/material.dart';
-import 'package:native_video_player/native_video_player.dart';
+import 'package:video_player/video_player.dart';
 
-class NativeVideoPlayerWidget extends StatefulWidget {
-  final String videoPath;
+class NativeVideoWidget extends StatefulWidget {
+  final String videoUrl;
 
-  NativeVideoPlayerWidget({required this.videoPath});
+  const NativeVideoWidget({Key? key, required this.videoUrl}) : super(key: key);
 
   @override
-  _NativeVideoPlayerWidgetState createState() => _NativeVideoPlayerWidgetState();
+  _NativeVideoWidgetState createState() => _NativeVideoWidgetState();
 }
 
-class _NativeVideoPlayerWidgetState extends State<NativeVideoPlayerWidget> {
+class _NativeVideoWidgetState extends State<NativeVideoWidget> {
+  late VideoPlayerController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.asset(widget.videoUrl)
+      ..initialize().then((_) {
+        setState(() {});
+      });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: NativeVideoPlayerView(
-        onViewReady: (controller) async {
-          try {
-            final videoSource = await VideoSource.init(
-              path: widget.videoPath,
-              type: VideoSourceType.asset,
-            );
-            await controller.loadVideoSource(videoSource);
-          } catch (e) {
-            print('Error loading video: $e');
-          }
-        },
-      ),
-    );
+    return _controller.value.isInitialized
+        ? Column(
+            children: [
+              AspectRatio(
+                aspectRatio: _controller.value.aspectRatio,
+                child: VideoPlayer(_controller),
+              ),
+              IconButton(
+                icon: Icon(
+                  _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _controller.value.isPlaying ? _controller.pause() : _controller.play();
+                  });
+                },
+              ),
+            ],
+          )
+        : const CircularProgressIndicator();
   }
 }
