@@ -13,14 +13,19 @@ class VlcVideoWidget extends StatefulWidget {
 class _VlcVideoWidgetState extends State<VlcVideoWidget> {
   late VlcPlayerController _vlcController;
 
-  @override
-  void initState() {
-    super.initState();
-    _vlcController = VlcPlayerController.asset(
-      widget.videoUrl,
-      autoPlay: false,
-    );
-  }
+@override
+void initState() {
+  super.initState();
+  _vlcController = VlcPlayerController.asset(
+    widget.videoUrl,
+    autoPlay: false,
+  );
+  _vlcController.addListener(() {
+    if (_vlcController.value.isInitialized) {
+      setState(() {});
+    }
+  });
+}
 
   @override
   void dispose() {
